@@ -3,21 +3,33 @@
 // then be queries to obtain information.
 package httplog
 
+import (
+	"bytes"
+	"io"
+	"net/http"
+)
+
 type Logger struct {
 	// internal buffer that we periodically flush to the HTTP endpoint
-	buf []byte
+	buf *bytes.Buffer
 	// TODO: prefixing support
 }
 
 // New creates a new instance of the httplog.Logger. All Loggers will
 // log to the same http endpoint.
 func New() *Logger {
-	return &Logger{
-		buf: make([]byte, 0),
-	}
+	buf := &bytes.Buffer{}
+	return &Logger{buf: buf}
 }
 
+// Println prints a line to the logger.
 func (l *Logger) Println(text string) {
-	l.buf = append(l.buf, []byte(text)...)
-	l.buf = append(l.buf, []byte("\n")...)
+	// l.buf = append(l.buf, []byte(text)...)
+	// l.buf = append(l.buf, []byte("\n")...)
+	l.buf.WriteString(text)
+	l.buf.WriteString("\n")
+}
+
+func (l *Logger) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	io.Copy(w, l.buf)
 }
