@@ -9,8 +9,9 @@ import (
 
 func main() {
 	l := log.New()
-
-	go http.ListenAndServe(":21200", l)
+	s := &http.Server{Handler: l, Addr: ":21200"}
+	// http2.ConfigureServer(s, nil)
+	go s.ListenAndServe()
 
 	l.Println("initial")
 
