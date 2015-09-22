@@ -35,6 +35,9 @@ func New(prefix string) *Logger {
 // Println prints a line to the logger.
 func (l *Logger) Println(text string) {
 	l.m.Lock()
+	// every time we write, ensure that we have enough to write out
+	// RFC3339 + space + newline + prefix + at least 100 bytes.
+	l.buf.Grow(25 + 1 + 1 + len(l.prefix) + 100)
 	if l.prefix != "" {
 		l.buf.WriteString(l.prefix)
 	}
