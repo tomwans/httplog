@@ -5,6 +5,7 @@ package httplog
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"net/http"
 	"time"
@@ -34,5 +35,9 @@ func (l *Logger) Println(text string) {
 }
 
 func (l *Logger) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	io.Copy(w, l.buf)
+	n, err := io.Copy(w, l.buf)
+	if err != nil {
+		w.Write([]byte(fmt.Sprintf("error: only written %d bytes due to: %s", n, err)))
+		return
+	}
 }

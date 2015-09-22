@@ -15,7 +15,7 @@ func main() {
 	l.Println("initial")
 
 	i := 0
-	for range time.Tick(10 * time.Second) {
+	for range time.Tick(2 * time.Second) {
 		l.Println(fmt.Sprintf("test%d", i))
 		i++
 	}
