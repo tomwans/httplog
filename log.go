@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"io"
 	"net/http"
+	"time"
 )
 
 type Logger struct {
@@ -26,6 +27,8 @@ func New() *Logger {
 func (l *Logger) Println(text string) {
 	// l.buf = append(l.buf, []byte(text)...)
 	// l.buf = append(l.buf, []byte("\n")...)
+	l.buf.WriteString(time.Now().Format(time.RFC3339))
+	l.buf.WriteString(" ")
 	l.buf.WriteString(text)
 	l.buf.WriteString("\n")
 }
