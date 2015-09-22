@@ -17,7 +17,8 @@ type Logger struct {
 	buf *bytes.Buffer
 	m   *sync.RWMutex
 
-	// TODO: prefixing support
+	// Prefix to set for every message.
+	Prefix string
 }
 
 // New creates a new instance of the httplog.Logger. All Loggers will
@@ -30,6 +31,9 @@ func New() *Logger {
 // Println prints a line to the logger.
 func (l *Logger) Println(text string) {
 	l.m.Lock()
+	if l.Prefix != "" {
+		l.buf.WriteString(l.Prefix)
+	}
 	l.buf.WriteString(time.Now().Format(time.RFC3339))
 	l.buf.WriteString(" ")
 	l.buf.WriteString(text)

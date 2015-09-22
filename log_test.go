@@ -24,3 +24,14 @@ func TestEnsureTimeIsLoggedAsRFC3339(t *testing.T) {
 		t.Fatalf("expected first non-space characters to be the RFC3339 timestamp: %s", err)
 	}
 }
+
+func TestEnsurePrefixCanBeSet(t *testing.T) {
+	l := New()
+	goodpref := "testing!"
+	l.Prefix = goodpref
+	l.Println("ok")
+	x := l.buf.String()
+	if !strings.HasPrefix(x, goodpref) {
+		t.Fatalf("expected prefix %s in %s", goodpref, x)
+	}
+}
