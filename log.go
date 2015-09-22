@@ -13,26 +13,30 @@ import (
 )
 
 type Logger struct {
+	// rw-lock for buf
+	m *sync.RWMutex
 	// internal buffer that we periodically flush to the HTTP endpoint
 	buf *bytes.Buffer
-	m   *sync.RWMutex
 
-	// Prefix to set for every message.
-	Prefix string
+	prefix string
 }
 
 // New creates a new instance of the httplog.Logger. All Loggers will
 // log to the same http endpoint.
-func New() *Logger {
+func New(prefix string) *Logger {
 	buf := &bytes.Buffer{}
-	return &Logger{buf: buf, m: new(sync.RWMutex)}
+	return &Logger{
+		prefix: prefix,
+		buf:    buf,
+		m:      new(sync.RWMutex),
+	}
 }
 
 // Println prints a line to the logger.
 func (l *Logger) Println(text string) {
 	l.m.Lock()
-	if l.Prefix != "" {
-		l.buf.WriteString(l.Prefix)
+	if l.prefix != "" {
+		l.buf.WriteString(l.prefix)
 	}
 	l.buf.WriteString(time.Now().Format(time.RFC3339))
 	l.buf.WriteString(" ")

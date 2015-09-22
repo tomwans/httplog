@@ -8,8 +8,7 @@ import (
 )
 
 func main() {
-	l := log.New()
-	l.Prefix = "test: "
+	l := log.New("test: ")
 	s := &http.Server{Handler: l, Addr: ":21200"}
 	// http2.ConfigureServer(s, nil)
 	go s.ListenAndServe()
