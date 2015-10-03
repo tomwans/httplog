@@ -29,12 +29,19 @@ type Logger struct {
 // New creates a new instance of the httplog.Logger. All Loggers will
 // log to the same http endpoint.
 func New(prefix string) *Logger {
+	lenPrefix := len(prefix)
 	buf := &bytes.Buffer{}
 	return &Logger{
-		prefix:  prefix,
-		buf:     buf,
-		m:       new(sync.RWMutex),
-		bufPool: &sync.Pool{New: func() interface{} { return &bytes.Buffer{} }},
+		prefix: prefix,
+		buf:    buf,
+		m:      new(sync.RWMutex),
+		bufPool: &sync.Pool{
+			New: func() interface{} {
+				b := &bytes.Buffer{}
+				b.Grow(25 + 1 + 1 + lenPrefix + 1024)
+				return b
+			},
+		},
 	}
 }
 
