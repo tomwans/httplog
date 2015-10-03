@@ -32,20 +32,31 @@ func New(prefix string) *Logger {
 	}
 }
 
-// Println prints a line to the logger.
-func (l *Logger) Println(text string) {
+// print writes a text string including the prefix, time header, and provided text.
+func (l *Logger) print(text string) {
+	// get this before the lock
+	rfc3339now := time.Now().Format(time.RFC3339)
+
 	l.m.Lock()
 	// every time we write, ensure that we have enough to write out
-	// RFC3339 + space + newline + prefix + at least 100 bytes.
-	l.buf.Grow(25 + 1 + 1 + len(l.prefix) + 100)
+	// RFC3339 + space + newline + prefix + at least 1024 bytes.
+	l.buf.Grow(25 + 1 + 1 + len(l.prefix) + 1024)
 	if l.prefix != "" {
 		l.buf.WriteString(l.prefix)
 	}
-	l.buf.WriteString(time.Now().Format(time.RFC3339))
+	l.buf.WriteString(rfc3339now)
 	l.buf.WriteString(" ")
 	l.buf.WriteString(text)
-	l.buf.WriteString("\n")
+	buf := l.buf.Bytes()
+	if len(buf) == 0 || buf[len(buf)-1] != '\n' {
+		l.buf.WriteString("\n")
+	}
 	l.m.Unlock()
+}
+
+// Println prints a line to the logger.
+func (l *Logger) Println(v ...interface{}) {
+	l.print(fmt.Sprintln(v...))
 }
 
 func (l *Logger) ServeHTTP(w http.ResponseWriter, r *http.Request) {
