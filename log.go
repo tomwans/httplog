@@ -61,11 +61,8 @@ func (l *Logger) printBuffer(buf *bytes.Buffer) {
 	io.Copy(l.buf, buf)
 	l.m.Unlock()
 
-	if buf.Cap() < 4096 {
-		buf.Reset()
-		l.bufPool.Put(buf)
-	}
-	// else we just let this buffer get gc'd
+	buf.Reset()
+	l.bufPool.Put(buf)
 }
 
 // Println prints a line to the logger.
