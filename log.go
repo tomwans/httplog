@@ -18,45 +18,73 @@ type Logger struct {
 	// internal buffer that we periodically flush to the HTTP endpoint
 	buf *bytes.Buffer
 
+	// prefix for every line
 	prefix string
+
+	// contains temporary buffers for writing log lines to, before
+	// flushing to buf.
+	bufPool *sync.Pool
 }
 
 // New creates a new instance of the httplog.Logger. All Loggers will
 // log to the same http endpoint.
 func New(prefix string) *Logger {
+	lenPrefix := len(prefix)
 	buf := &bytes.Buffer{}
 	return &Logger{
 		prefix: prefix,
 		buf:    buf,
 		m:      new(sync.RWMutex),
+		bufPool: &sync.Pool{
+			New: func() interface{} {
+				b := &bytes.Buffer{}
+				b.Grow(25 + 1 + 1 + lenPrefix + 1024)
+				return b
+			},
+		},
 	}
 }
 
-// print writes a text string including the prefix, time header, and provided text.
-func (l *Logger) print(text string) {
-	// get this before the lock
+func (l *Logger) setupBuffer() *bytes.Buffer {
 	rfc3339now := time.Now().Format(time.RFC3339)
-
-	l.m.Lock()
-	// every time we write, ensure that we have enough to write out
-	// RFC3339 + space + newline + prefix + at least 1024 bytes.
-	l.buf.Grow(25 + 1 + 1 + len(l.prefix) + 1024)
+	buf := l.bufPool.Get().(*bytes.Buffer)
 	if l.prefix != "" {
-		l.buf.WriteString(l.prefix)
+		buf.WriteString(l.prefix)
 	}
-	l.buf.WriteString(rfc3339now)
-	l.buf.WriteString(" ")
-	l.buf.WriteString(text)
-	buf := l.buf.Bytes()
-	if len(buf) == 0 || buf[len(buf)-1] != '\n' {
-		l.buf.WriteString("\n")
-	}
+	buf.WriteString(rfc3339now)
+	buf.WriteString(" ")
+	return buf
+}
+
+func (l *Logger) printBuffer(buf *bytes.Buffer) {
+	l.m.Lock()
+	io.Copy(l.buf, buf)
 	l.m.Unlock()
+
+	if buf.Cap() < 4096 {
+		buf.Reset()
+		l.bufPool.Put(buf)
+	}
+	// else we just let this buffer get gc'd
 }
 
 // Println prints a line to the logger.
 func (l *Logger) Println(v ...interface{}) {
-	l.print(fmt.Sprintln(v...))
+	b := l.setupBuffer()
+	fmt.Fprintln(b, v...)
+	l.printBuffer(b)
+}
+
+func (l *Logger) Printf(format string, v ...interface{}) {
+	b := l.setupBuffer()
+	fmt.Fprintf(b, format, v...)
+	l.printBuffer(b)
+}
+
+func (l *Logger) Print(v ...interface{}) {
+	b := l.setupBuffer()
+	fmt.Fprint(b, v...)
+	l.printBuffer(b)
 }
 
 func (l *Logger) ServeHTTP(w http.ResponseWriter, r *http.Request) {

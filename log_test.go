@@ -31,7 +31,34 @@ func TestEnsurePrefixCanBeSet(t *testing.T) {
 	l.Println("ok")
 	x := l.buf.String()
 	if !strings.HasPrefix(x, goodpref) {
-		t.Fatalf("expected prefix %s in %s", goodpref, x)
+		t.Fatalf("expected prefix %s in '%s'", goodpref, x)
+	}
+}
+
+func TestPrint(t *testing.T) {
+	l := New("")
+	l.Print("ok")
+	x := l.buf.String()
+	if !strings.HasSuffix(x, "ok") {
+		t.Fatalf("expected suffix %s in '%s'", "ok", x)
+	}
+}
+
+func TestPrintf(t *testing.T) {
+	l := New("")
+	l.Printf("%s %d", "ok", 1)
+	x := l.buf.String()
+	if !strings.HasSuffix(x, "ok 1") {
+		t.Fatalf("expected suffix %s in '%s'", "ok 1", x)
+	}
+}
+
+func TestPrintln(t *testing.T) {
+	l := New("")
+	l.Println("um", "ok")
+	x := l.buf.String()
+	if !strings.HasSuffix(x, "um ok\n") {
+		t.Fatalf("expected suffix %s in '%s'", "um ok", x)
 	}
 }
 
