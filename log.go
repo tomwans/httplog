@@ -21,6 +21,9 @@ type Logger struct {
 	// prefix for every line
 	prefix string
 
+	// number of bytes to keep maximum
+	limit int
+
 	// contains temporary buffers for writing log lines to, before
 	// flushing to buf.
 	bufPool *sync.Pool
@@ -28,12 +31,13 @@ type Logger struct {
 
 // New creates a new instance of the httplog.Logger. All Loggers will
 // log to the same http endpoint.
-func New(prefix string) *Logger {
+func New(prefix string, limit int) *Logger {
 	lenPrefix := len(prefix)
 	buf := &bytes.Buffer{}
 	return &Logger{
 		prefix: prefix,
 		buf:    buf,
+		limit:  limit,
 		m:      new(sync.RWMutex),
 		bufPool: &sync.Pool{
 			New: func() interface{} {
@@ -57,12 +61,41 @@ func (l *Logger) setupBuffer() *bytes.Buffer {
 }
 
 func (l *Logger) printBuffer(buf *bytes.Buffer) {
+	// do we need to evict old lines?
+	if l.buf.Len()+buf.Len() > l.limit {
+		// we would go over the limit, so we are just going to truncate
+		// enough to fit this upcoming line
+		l.truncateBytes(buf.Len())
+	}
+
 	l.m.Lock()
 	io.Copy(l.buf, buf)
 	l.m.Unlock()
 
 	buf.Reset()
 	l.bufPool.Put(buf)
+}
+
+// truncateByes will evict enough lines (separated by \n) of the
+// internal logging buffer to fit at least n bytes.
+func (l *Logger) truncateBytes(n int) {
+	i := 0
+	buf := l.buf.Bytes()
+	for {
+		// start from n, and keep going until we find a \n.
+
+		if n+i == len(buf) {
+			l.buf.Reset()
+			break
+		}
+
+		if buf[n+i] == '\n' {
+			l.buf.Truncate(n + i)
+			break
+		}
+
+		i++
+	}
 }
 
 // Println prints a line to the logger.
