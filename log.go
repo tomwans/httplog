@@ -20,7 +20,7 @@ const (
 type Logger struct {
 	// rw-lock for buf
 	m *sync.RWMutex
-	// internal buffer that we periodically flush to the HTTP endpoint
+	// final buffer that we will periodically flush to the HTTP endpoint
 	buf *bytes.Buffer
 
 	// prefix for every line
